@@ -1,0 +1,66 @@
+#! /usr/bin/env php
+
+<?php
+
+use Symfony\Component\Console\Application;
+use App\DatabaseAdapter;
+use App\RegisterWebhook;
+use App\DispatchEvent;
+
+require 'vendor/autoload.php';
+
+$app = new Application('webhooks', '1.0.0');
+
+try
+{
+    $pdo = new PDO('mysql:dbname=webhooks;host=127.0.0.1', 'root', 'root');
+
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    //This table has the list of available event
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `webhook_event` (
+                      `id_webhook_event` int(10) unsigned NOT NULL AUTO_INCREMENT,
+                      `name` varchar(50) NOT NULL,
+                      PRIMARY KEY (`id_webhook_event`)
+                    ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+               ");
+
+    /* This table has the list of actual work,
+    when an event occurs we check subscribed URLs and schedule the work here. */
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `webhook_callback` (
+                      `id_webhook_callback` int(10) unsigned NOT NULL AUTO_INCREMENT,
+                      `callback_url` text NOT NULL,
+                      `message` text,
+                      `status` enum('success','fail','inprogress') DEFAULT 'inprogress',
+                      `event` varchar(31) NOT NULL,
+                      `last_call_at` datetime DEFAULT NULL,
+                      `retries` tinyint(4) NOT NULL DEFAULT '0',
+                      `retry_at` datetime DEFAULT NULL,
+                      PRIMARY KEY (`id_webhook_callback`)
+                    ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+               ");
+    //This table has the list of registered callback URLs
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `webhook` (
+                  `id_webhook` int(10) unsigned NOT NULL AUTO_INCREMENT,
+                  `fk_webhook_event` int(10) unsigned NOT NULL,
+                  `callback_url` text NOT NULL,
+                  PRIMARY KEY (`id_webhook`),
+                  CONSTRAINT `wre_fk_webhook_event` FOREIGN KEY (`fk_webhook_event`) REFERENCES `webhook_event` (`id_webhook_event`)
+                ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+          ");
+}
+catch (Exception $exception)
+{
+    echo 'Could not connect to the database';
+    exit(1);
+}
+
+
+$dbAdapter = new DatabaseAdapter($pdo);
+
+$app->add(new RegisterWebhook($dbAdapter));
+$app->add(new DispatchEvent($dbAdapter));
+
+
+$app->run();
