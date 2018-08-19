@@ -10,6 +10,10 @@ Simply give **install.sh** script execute permission, then run the script.
 ```
 $ chmod +x install.sh
 $ source ./install.sh
+```
+
+Then run 
+```
 $ composer install
 ```
 
