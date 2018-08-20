@@ -5,17 +5,25 @@ Example on Webhooks.
 Setup
 ---------------------
 
-Simply give **install.sh** script execute permission, then run the script.
+* **Create Database**
 
-```
-$ chmod +x install.sh
-$ source ./install.sh
-```
+  you must Create a DataBase named 
+   `webhooks`
 
-Then run 
-```
-$ composer install
-```
+* **Install**
+
+    Simply give **install.sh** script execute permission, then run the script.
+
+    ```
+    $ chmod +x install.sh
+    $ source ./install.sh
+    ```
+
+    Then install dependencies:
+    
+    ```
+    $ composer install
+    ```
 
 Create Event command
 --------------------------
